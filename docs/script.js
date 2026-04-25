@@ -20,25 +20,36 @@ document.addEventListener('DOMContentLoaded', function() {
     video2.play();
   }, 8000);
 
-  // Carrossel de imagens - 3 por vez com loop infinito suave
+  // Carrossel de imagens - loop infinito contínuo
   const carousel = document.querySelector('.carousel');
   const carouselImages = document.querySelectorAll('.carousel-image');
   const prevBtn = document.getElementById('prevBtn');
   const nextBtn = document.getElementById('nextBtn');
   const indicators = document.querySelectorAll('.indicator');
   const itemsPerView = 3;
-  const totalItems = carouselImages.length;
-  let currentPosition = 0;
+  let currentIndex = 0;
   let autoRotateInterval;
 
-  function updateCarousel() {
-    const translateX = currentPosition * (-100 / itemsPerView);
-    carousel.style.transform = `translateX(${translateX}%)`;
+  // Clona as primeiras imagens para criar o efeito de loop infinito
+  const clonedImages = Array.from(carouselImages).slice(0, itemsPerView).map(img => img.cloneNode(true));
+  clonedImages.forEach(img => {
+    img.classList.add('cloned');
+    carousel.appendChild(img);
+  });
 
-    // Atualiza indicadores baseado na posição módulo do total de grupos
-    const indicatorIndex = Math.abs(currentPosition) % indicators.length;
+  const allImages = carousel.querySelectorAll('.carousel-image');
+  const totalItems = allImages.length;
+
+  function updateCarousel() {
+    const imageWidth = allImages[0].offsetWidth + 15;
+    const translateX = currentIndex * imageWidth;
+    carousel.style.transform = `translateX(-${translateX}px)`;
+
+    // Atualiza indicadores (baseado na posição real)
+    const realIndicators = indicators.length;
+    const activeIndicator = currentIndex % realIndicators;
     indicators.forEach((ind, idx) => {
-      if (idx === indicatorIndex) {
+      if (idx === activeIndicator) {
         ind.classList.add('active');
       } else {
         ind.classList.remove('active');
@@ -47,23 +58,41 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function nextImages() {
-    currentPosition++;
-    // Se passou do total de itens, volta ao começo
-    if (currentPosition >= totalItems - itemsPerView + 1) {
-      // Reseta para a próxima repetição contínua
-      currentPosition = currentPosition % (totalItems - itemsPerView + 1);
-    }
+    currentIndex++;
     updateCarousel();
+
+    // Quando chega nas imagens clonadas, volta instantaneamente para o início
+    if (currentIndex >= carouselImages.length) {
+      setTimeout(() => {
+        carousel.style.transition = 'none';
+        currentIndex = 0;
+        carousel.style.transform = `translateX(0px)`;
+        // Restaura a transição após o reset
+        setTimeout(() => {
+          carousel.style.transition = 'transform 0.6s ease-in-out';
+        }, 50);
+      }, 600);
+    }
     resetAutoRotate();
   }
 
   function prevImages() {
-    currentPosition--;
-    // Se foi antes do início, vai para o final
-    if (currentPosition < 0) {
-      currentPosition = (totalItems - itemsPerView) % (totalItems - itemsPerView + 1);
+    // Se estiver no início, vai para a posição clonada (fim)
+    if (currentIndex === 0) {
+      carousel.style.transition = 'none';
+      currentIndex = carouselImages.length;
+      const imageWidth = allImages[0].offsetWidth + 15;
+      carousel.style.transform = `translateX(-${currentIndex * imageWidth}px)`;
+      
+      setTimeout(() => {
+        carousel.style.transition = 'transform 0.6s ease-in-out';
+        currentIndex--;
+        updateCarousel();
+      }, 50);
+    } else {
+      currentIndex--;
+      updateCarousel();
     }
-    updateCarousel();
     resetAutoRotate();
   }
 
@@ -83,7 +112,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Indicadores
   indicators.forEach((indicator, index) => {
     indicator.addEventListener('click', function() {
-      currentPosition = index;
+      currentIndex = index;
       updateCarousel();
       resetAutoRotate();
     });
@@ -92,4 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Inicializa o carrossel
   updateCarousel();
   startAutoRotate();
+
+  // Recalcula posições ao redimensionar a janela
+  window.addEventListener('resize', updateCarousel);
 });
