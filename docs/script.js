@@ -46,10 +46,11 @@ document.addEventListener('DOMContentLoaded', function() {
     carousel.style.transform = `translateX(-${translateX}px)`;
 
     // Atualiza indicadores (baseado na posição real)
-    const realIndicators = indicators.length;
-    const activeIndicator = currentIndex % realIndicators;
+    let realIndex = currentIndex;
+    if (currentIndex >= carouselImages.length) realIndex = 0;
+    if (currentIndex < 0) realIndex = carouselImages.length - 1;
     indicators.forEach((ind, idx) => {
-      if (idx === activeIndicator) {
+      if (idx === realIndex) {
         ind.classList.add('active');
       } else {
         ind.classList.remove('active');
@@ -66,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function() {
       setTimeout(() => {
         carousel.style.transition = 'none';
         currentIndex = 0;
-        carousel.style.transform = `translateX(0px)`;
+        updateCarousel();
         // Restaura a transição após o reset
         setTimeout(() => {
           carousel.style.transition = 'transform 0.6s ease-in-out';
@@ -81,9 +82,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (currentIndex === 0) {
       carousel.style.transition = 'none';
       currentIndex = carouselImages.length;
-      const imageWidth = allImages[0].offsetWidth + 15;
-      carousel.style.transform = `translateX(-${currentIndex * imageWidth}px)`;
-      
+      updateCarousel();
       setTimeout(() => {
         carousel.style.transition = 'transform 0.6s ease-in-out';
         currentIndex--;
